@@ -6,6 +6,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## 2.3.1
+### Added
+- Add MP4 Nero and QuickTime chapter read/write APIs, including `style: :preserve`.
+- Add explicit `TagLib::MP4::File#save_chapters` for chapter-only persistence.
+
+### Changed
+- Require TagLib 2.3.1 or newer when building the native extensions.
+- The initial supported platforms for this release are macOS and Linux.
+
 ## 2.0.0
 ### Changed
 - Regenerate SWIG wrapper code against TagLib 2.0.1. This breaks

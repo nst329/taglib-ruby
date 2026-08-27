@@ -21,7 +21,7 @@ Gem::Specification.new do |s|
   DESC
 
   s.require_paths = ['lib']
-  s.requirements = ['taglib (libtag1-dev in Debian/Ubuntu, taglib-devel in Fedora/RHEL)']
+  s.requirements = ['TagLib C++ >= 2.3.1 (libtag1-dev in Debian/Ubuntu, taglib-devel in Fedora/RHEL)']
 
   s.add_development_dependency 'bundler', '>= 1.2', '< 3'
   s.add_development_dependency 'kramdown', '~> 2.3.0'
@@ -59,6 +59,7 @@ Gem::Specification.new do |s|
     'README.md',
     'Rakefile',
     'docs/default/fulldoc/html/css/common.css',
+    'docs/mp4-chapter-api-design.md',
     'docs/taglib/aiff.rb',
     'docs/taglib/base.rb',
     'docs/taglib/flac.rb',
@@ -123,6 +124,7 @@ Gem::Specification.new do |s|
     'lib/taglib/wav.rb',
     'taglib-ruby.gemspec',
     'tasks/docs_coverage.rake',
+    'tasks/build.rb',
     'tasks/ext.rake',
     'tasks/gemspec_check.rake',
     'tasks/swig.rake',

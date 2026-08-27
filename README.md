@@ -22,21 +22,19 @@ Contributions for more coverage of the library are very welcome.
 
 ## Installation
 
-Before you install the gem, make sure to have [taglib 1.11.1 or higher][taglib]
-installed with header files (and a C++ compiler of course):
+Before you install the gem, make sure to have [TagLib 2.3.1 or higher][taglib]
+installed with header files and a C++17 compiler. This is a source gem: its
+native extensions are compiled against the TagLib installed on your system.
+The TagLib shared library is also required at runtime.
 
 * Debian/Ubuntu: `sudo apt-get install libtag1-dev`
 * Fedora/RHEL: `sudo dnf install taglib-devel`
 * Brew: `brew install taglib`
 * MacPorts: `sudo port install taglib`
 
-Then install the latest taglib-ruby 1.x by running:
+Then install taglib-ruby 2.3.1:
 
-    gem install taglib-ruby --version '< 2'
-
-If you are using TagLib 2.0.1 or higher, you need to install taglib-ruby 2.x instead:
-
-    gem install taglib-ruby --version '>= 2'
+    gem install taglib-ruby --version 2.3.1
 
 ### MacOS
 
@@ -44,20 +42,20 @@ Depending on your brew setup, TagLib might be installed in different locations,
 which makes it hard for taglib-ruby to find it. To get the library location, run:
 
     $ brew info taglib
-    taglib: stable 1.13 (bottled), HEAD
+    taglib: stable 2.3.1 (bottled), HEAD
     Audio metadata library
     https://taglib.org/
-    /opt/homebrew/Cellar/taglib/1.13 (122 files, 1.6MB) *
+    /opt/homebrew/Cellar/taglib/2.3.1 (files installed by Homebrew) *
     ...
 
 Note the line with the path at the end. Provide that using the `TAGLIB_DIR`
 environment variable when installing, like this:
 
-    TAGLIB_DIR=/opt/homebrew/Cellar/taglib/1.13 gem install taglib-ruby
+    TAGLIB_DIR=/opt/homebrew/opt/taglib gem install taglib-ruby --version 2.3.1
 
 If you're using bundler, like this:
 
-    TAGLIB_DIR=/opt/homebrew/Cellar/taglib/1.13 bundle install
+    TAGLIB_DIR=/opt/homebrew/opt/taglib bundle install
 
 Another problem might be that `clang++` doesn't work with a specific version
 of TagLib. In that case, try compiling taglib-ruby's C++ extensions with a
@@ -71,6 +69,22 @@ Complete API documentation can be found on
 [rubydoc.info](http://rubydoc.info/gems/taglib-ruby/frames).
 
 Begin with the `TagLib` namespace.
+
+For MP4 chapters, use the explicit chapter save operation when only chapter
+data should be changed:
+
+    file = TagLib::MP4::File.new('sample.m4a', false)
+    chapters = [
+      TagLib::MP4::Chapter.new(start_time: 0, title: 'Opening'),
+      TagLib::MP4::Chapter.new(start_time: 500, title: 'Main')
+    ]
+    file.set_chapters(chapters, style: :preserve)
+    file.save_chapters
+    file.close
+
+`style: :preserve` keeps the existing Nero/QuickTime chapter format. If no
+chapter format exists, both formats are created. SWIG is only needed by
+contributors regenerating wrappers; it is not needed to install the gem.
 
 ## Release Notes
 
@@ -119,19 +133,19 @@ Build and install gem into system gems:
 
 Build a specific version of Taglib:
 
-    PLATFORM=x86_64-linux TAGLIB_VERSION=1.11.1 rake vendor
+    PLATFORM=x86_64-linux TAGLIB_VERSION=2.3.1 rake vendor
 
-The above command will automatically download Taglib 1.11.1, build it and
-install it in `tmp/x86_64-linux/taglib-1.11.1`.
+The above command will automatically download TagLib 2.3.1, build it and
+install it in `tmp/x86_64-linux/taglib-2.3.1`.
 
 The `swig`, `compile` and `test` tasks can then be executed against that specific
 version of Taglib by setting the `TAGLIB_DIR` environment variable to
-`$PWD/tmp/x86_64-linux/taglib-1.11.1` (it is assumed that taglib headers are
+`$PWD/tmp/x86_64-linux/taglib-2.3.1` (it is assumed that TagLib headers are
 located at `$TAGLIB_DIR/include` and taglib libraries at `$TAGLIB_DIR/lib`).
 
 To do everything in one command:
 
-    PLATFORM=x86_64-linux TAGLIB_VERSION=1.11.1 TAGLIB_DIR=$PWD/tmp/x86_64-linux/taglib-1.11.1 rake vendor compile test
+    PLATFORM=x86_64-linux TAGLIB_VERSION=2.3.1 TAGLIB_DIR=$PWD/tmp/x86_64-linux/taglib-2.3.1 rake vendor compile test
 
 ### Workflow
 

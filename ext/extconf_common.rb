@@ -31,6 +31,10 @@ end
 # for more details.
 dir_config('tag', taglib_dir)
 
+unless try_cpp('#include <taglib/taglib.h>')
+  error 'TagLib headers are required. Please install the TagLib development package and retry.'
+end
+
 # When compiling statically, -lstdc++ would make the resulting .so to
 # have a dependency on an external libstdc++ instead of the static one.
 unless $LDFLAGS.split(' ').include?('-static-libstdc++')
@@ -46,6 +50,24 @@ unless have_library('tag')
     Brew: brew install taglib
     MacPorts: sudo port install taglib
   DESC
+end
+
+taglib_version_check = <<~CPP
+  #include <taglib/taglib.h>
+
+  #if !defined(TAGLIB_MAJOR_VERSION) || !defined(TAGLIB_MINOR_VERSION) || !defined(TAGLIB_PATCH_VERSION)
+  #error TagLib version macros are unavailable
+  #endif
+
+  #if TAGLIB_MAJOR_VERSION < 2 || \
+      (TAGLIB_MAJOR_VERSION == 2 && TAGLIB_MINOR_VERSION < 3) || \
+      (TAGLIB_MAJOR_VERSION == 2 && TAGLIB_MINOR_VERSION == 3 && TAGLIB_PATCH_VERSION < 1)
+  #error TagLib 2.3.1 or newer is required
+  #endif
+CPP
+
+unless try_cpp(taglib_version_check)
+  error 'TagLib 2.3.1 or newer is required. Please upgrade TagLib and retry.'
 end
 
 $CFLAGS << ' -DSWIG_TYPE_TABLE=taglib'

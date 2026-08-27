@@ -9,6 +9,11 @@ task :gemspec_check do |_t|
   only_in_gemspec = gemspec_files - git_files
   only_in_git = git_files - gemspec_files
 
+  if only_in_gemspec.empty? && only_in_git.empty?
+    puts 'gemspec file list is up to date.'
+    next
+  end
+
   unless only_in_gemspec.empty?
     puts 'In gemspec but not in git:'
     puts only_in_gemspec
@@ -18,4 +23,6 @@ task :gemspec_check do |_t|
     puts 'In git but not in gemspec:'
     puts only_in_git
   end
+
+  abort 'gemspec file list does not match tracked files.'
 end

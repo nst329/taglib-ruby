@@ -84,3 +84,45 @@ jobs:
 
       - name: Run Tests (taglib-ruby)
         run: bundle exec rake test
+
+      - name: Check gemspec file list
+        run: bundle exec rake gemspec_check
+
+      - name: Build gem artifact
+        run: gem build taglib-ruby.gemspec
+
+      - name: Install and smoke test packaged gem
+        env:
+          GEM_HOME: ${{ runner.temp }}/taglib-ruby-gem-home
+          TAGLIB_DIR: ${{ github.workspace }}/tmp/${{ env.PLATFORM }}/taglib-${{ env.TAGLIB_VERSION }}
+          LD_LIBRARY_PATH: ${{ github.workspace }}/tmp/${{ env.PLATFORM }}/taglib-${{ env.TAGLIB_VERSION }}/lib
+        run: |
+          mkdir -p "$GEM_HOME"
+          gem install --local taglib-ruby-2.3.1.gem --no-document
+          ruby <<'RUBY'
+          gem 'taglib-ruby', '= 2.3.1'
+          require 'fileutils'
+          require 'tmpdir'
+          require 'taglib'
+
+          raise 'Chapter API is unavailable' unless TagLib::MP4::Chapter
+
+          source = File.expand_path('test/data/mp4.m4a')
+          dir = Dir.mktmpdir('taglib-ruby-gem-smoke')
+          path = File.join(dir, 'sample.m4a')
+          FileUtils.cp(source, path)
+
+          chapters = [
+            TagLib::MP4::Chapter.new(start_time: 0, title: 'Opening'),
+            TagLib::MP4::Chapter.new(start_time: 500, title: 'Main')
+          ]
+          file = TagLib::MP4::File.new(path, false)
+          file.set_chapters(chapters, style: :preserve)
+          raise 'save_chapters failed' unless file.save_chapters
+          file.close
+
+          file = TagLib::MP4::File.new(path, false)
+          raise 'chapter round-trip failed' unless file.chapters == chapters
+          file.close
+          FileUtils.remove_entry(dir)
+          RUBY
