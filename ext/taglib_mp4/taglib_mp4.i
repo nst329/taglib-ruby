@@ -326,6 +326,12 @@ namespace TagLib {
 
 %warnfilter(SWIGWARN_PARSE_NAMED_NESTED_CLASS) IntPair;
 %ignore ItemMap;
+// TagLib 2.3 adds STEM values; expose them only after a dedicated safe API.
+%ignore TagLib::MP4::Stem;
+%ignore TagLib::MP4::Item::Item(const TagLib::MP4::Stem &);
+%ignore TagLib::MP4::Item::Item(const Stem &);
+%ignore TagLib::MP4::Item::Item(Stem const &);
+%ignore TagLib::MP4::Item::toStem;
 %include <taglib/mp4item.h>
 
 namespace TagLib {
@@ -359,6 +365,12 @@ namespace TagLib {
 %ignore TagLib::MP4::File::properties;
 %ignore TagLib::MP4::File::setProperties;
 %ignore TagLib::MP4::File::removeUnsupportedProperties;
+// ChapterList is copied through the safe Ruby Chapter API below.
+%ignore TagLib::MP4::ChapterList;
+%ignore TagLib::MP4::File::neroChapters;
+%ignore TagLib::MP4::File::setNeroChapters;
+%ignore TagLib::MP4::File::qtChapters;
+%ignore TagLib::MP4::File::setQtChapters;
 
 %rename("mp4_tag?") TagLib::MP4::File::hasMP4Tag;
 %include <taglib/mp4file.h>

@@ -94,7 +94,6 @@ Gem::Specification.new do |s|
     'ext/taglib_id3v2/taglib_id3v2_wrap.cxx',
     'ext/taglib_mp4/extconf.rb',
     'ext/taglib_mp4/taglib_mp4.i',
-    'ext/taglib_mp4/taglib_mp4_chapters_generated.h',
     'ext/taglib_mp4/taglib_mp4_wrap.cxx',
     'ext/taglib_mpeg/extconf.rb',
     'ext/taglib_mpeg/taglib_mpeg.i',
