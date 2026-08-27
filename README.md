@@ -85,6 +85,8 @@ data should be changed:
 `style: :preserve` keeps the existing Nero/QuickTime chapter format. If no
 chapter format exists, both formats are created. SWIG is only needed by
 contributors regenerating wrappers; it is not needed to install the gem.
+Chapter comparison allows a 1ms start-time difference. Chapter input duration
+is validated even when the file was opened with `read_properties: false`.
 
 ## Release Notes
 

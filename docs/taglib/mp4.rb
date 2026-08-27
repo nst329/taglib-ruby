@@ -1,4 +1,31 @@
 module TagLib::MP4
+  # Immutable MP4 chapter value copied between Ruby and TagLib.
+  #
+  # @param [Integer] start_time chapter start time in milliseconds
+  # @param [String] title chapter title encoded as UTF-8
+  class Chapter
+    # @return [Integer] chapter start time in milliseconds
+    attr_reader :start_time
+
+    # @return [String] chapter title
+    attr_reader :title
+
+    # @param start_time [Integer] chapter start time in milliseconds (0 or greater)
+    # @param title [String] UTF-8 title without NUL bytes
+    # @raise [ArgumentError] if the values are invalid
+    def initialize(start_time = nil, title = nil, **keywords)
+    end
+  end
+
+  # Raised when Nero and QuickTime chapters differ by more than 1ms or have
+  # different titles.
+  class ChapterConflictError < StandardError
+  end
+
+  # Raised when chapter-only persistence fails.
+  class ChapterSaveError < StandardError
+  end
+
   # The file class for '.m4a' files.
   #
   # @example Finding an MP4 item by field name
@@ -86,6 +113,81 @@ module TagLib::MP4
     #
     # @since 1.0.0
     def mp4_tag?
+    end
+
+    # Return chapters from the requested format, or resolve both formats.
+    #
+    # When both formats are present, chapter start times may differ by up to
+    # 1ms and are still considered equivalent. Larger differences or title
+    # differences raise {ChapterConflictError}.
+    #
+    # @param style [Symbol, nil] `:nero`, `:quicktime`, or `nil` for automatic resolution
+    # @return [Array<TagLib::MP4::Chapter>]
+    # @raise [TagLib::MP4::ChapterConflictError] if both formats conflict
+    def chapters(style: nil)
+    end
+
+    # Return which chapter formats are present.
+    # @return [Symbol] `:none`, `:nero`, `:quicktime`, or `:both`
+    def chapter_style
+    end
+
+    # Set chapters in memory without writing the file.
+    #
+    # `:preserve` keeps the existing format. If no format exists, both Nero
+    # and QuickTime chapters are created. Input validation always checks the
+    # file duration, including when the file was opened with
+    # `read_properties: false`.
+    #
+    # @param chapters [Array<TagLib::MP4::Chapter>]
+    # @param style [Symbol] `:preserve`, `:nero`, `:quicktime`, or `:both`
+    # @return [TagLib::MP4::File] self
+    # @raise [ArgumentError] if chapters or style are invalid
+    def set_chapters(chapters, style: :preserve)
+    end
+
+    # Remove chapters in memory without writing the file.
+    # @param style [Symbol] `:preserve`, `:nero`, `:quicktime`, or `:both`
+    # @return [TagLib::MP4::File] self
+    def remove_chapters(style: :both)
+    end
+
+    # Return Nero chapters only.
+    # @return [Array<TagLib::MP4::Chapter>]
+    def nero_chapters
+    end
+
+    # Set Nero chapters in memory without writing the file.
+    # @param chapters [Array<TagLib::MP4::Chapter>]
+    # @return [TagLib::MP4::File] self
+    def set_nero_chapters(chapters)
+    end
+
+    # Remove Nero chapters in memory without writing the file.
+    # @return [TagLib::MP4::File] self
+    def remove_nero_chapters
+    end
+
+    # Return QuickTime chapters only.
+    # @return [Array<TagLib::MP4::Chapter>]
+    def quicktime_chapters
+    end
+
+    # Set QuickTime chapters in memory without writing the file.
+    # @param chapters [Array<TagLib::MP4::Chapter>]
+    # @return [TagLib::MP4::File] self
+    def set_quicktime_chapters(chapters)
+    end
+
+    # Remove QuickTime chapters in memory without writing the file.
+    # @return [TagLib::MP4::File] self
+    def remove_quicktime_chapters
+    end
+
+    # Save only chapter changes, preserving existing tag items and artwork.
+    # @return [true]
+    # @raise [TagLib::MP4::ChapterSaveError] if the file cannot be saved
+    def save_chapters
     end
   end
 
