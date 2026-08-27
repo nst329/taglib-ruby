@@ -229,17 +229,15 @@ TagLib 2.3.1
 - 新しいC拡張は作らず、既存の`taglib_mp4`拡張へ追加する。
 - `save_chapters`は`MP4::File::save()`を呼ばない。
 
-TagLib 2.3.1にはチャプター専用保存の公開APIがない。実装は次の優先順とする。
+TagLib 2.3.1にはチャプター専用保存の公開APIがないため、既存の公開`NeroChapterList`／`QtChapterList`を呼び出す補助C++層を`taglib_mp4`へ実装する。
 
-1. TagLib上流へチャプター専用保存APIを追加する。
-2. 利用できない場合に限り、taglib-ruby側の補助C++実装を検討する。
+- C++のChapterListはSWIGで公開せず、Rubyの値オブジェクトとの間でコピーする。
 
 主な変更箇所:
 
 - `ext/taglib_mp4/taglib_mp4.i`
 - `ext/taglib_mp4/taglib_mp4_wrap.cxx`
 - `lib/taglib/mp4.rb`
-- `docs/taglib/mp4.rb`
 - `test/mp4_chapters_test.rb`
 - `test/data/`のMP4チャプターfixture
 - TagLibバージョン検査箇所

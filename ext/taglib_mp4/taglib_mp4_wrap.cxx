@@ -2125,6 +2125,8 @@ TagLib::MP4::CoverArtList ruby_array_to_taglib_cover_art_list(VALUE ary) {
   return result;
 }
 
+#include "taglib_mp4_chapters_generated.h"
+
 
 #include <limits.h>
 #if !defined(SWIG_NO_LLONG_MAX)
@@ -5815,6 +5817,63 @@ fail:
   return Qnil;
 }
 
+SWIGINTERN VALUE
+_wrap_File__chapter_style(int argc, VALUE *argv, VALUE self) {
+  TagLib::MP4::File *arg1 = 0; void *argp1 = 0;
+  if (argc != 0) rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)", argc);
+  int res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_TagLib__MP4__File, 0);
+  if (!SWIG_IsOK(res1)) return Qnil;
+  arg1 = reinterpret_cast<TagLib::MP4::File *>(argp1);
+  return taglib_mp4_chapter_style(arg1);
+}
+
+SWIGINTERN VALUE
+_wrap_File__chapters(int argc, VALUE *argv, VALUE self) {
+  TagLib::MP4::File *arg1 = 0; void *argp1 = 0;
+  if (argc != 1) rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)", argc);
+  int style = 0;
+  if (!SWIG_IsOK(SWIG_AsVal_int(argv[0], &style))) rb_raise(rb_eTypeError, "style must be an Integer");
+  int res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_TagLib__MP4__File, 0);
+  if (!SWIG_IsOK(res1)) return Qnil;
+  arg1 = reinterpret_cast<TagLib::MP4::File *>(argp1);
+  return taglib_mp4_chapters(arg1, style);
+}
+
+SWIGINTERN VALUE
+_wrap_File__set_chapters(int argc, VALUE *argv, VALUE self) {
+  TagLib::MP4::File *arg1 = 0; void *argp1 = 0;
+  if (argc != 2) rb_raise(rb_eArgError, "wrong # of arguments(%d for 2)", argc);
+  int style = 0;
+  if (!SWIG_IsOK(SWIG_AsVal_int(argv[1], &style))) rb_raise(rb_eTypeError, "style must be an Integer");
+  int res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_TagLib__MP4__File, 0);
+  if (!SWIG_IsOK(res1)) return Qnil;
+  arg1 = reinterpret_cast<TagLib::MP4::File *>(argp1);
+  taglib_mp4_set_chapters(arg1, argv[0], style);
+  return Qnil;
+}
+
+SWIGINTERN VALUE
+_wrap_File__remove_chapters(int argc, VALUE *argv, VALUE self) {
+  TagLib::MP4::File *arg1 = 0; void *argp1 = 0;
+  if (argc != 1) rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)", argc);
+  int style = 0;
+  if (!SWIG_IsOK(SWIG_AsVal_int(argv[0], &style))) rb_raise(rb_eTypeError, "style must be an Integer");
+  int res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_TagLib__MP4__File, 0);
+  if (!SWIG_IsOK(res1)) return Qnil;
+  arg1 = reinterpret_cast<TagLib::MP4::File *>(argp1);
+  return taglib_mp4_remove_chapters(arg1, style) ? Qtrue : Qfalse;
+}
+
+SWIGINTERN VALUE
+_wrap_File__save_chapters(int argc, VALUE *argv, VALUE self) {
+  TagLib::MP4::File *arg1 = 0; void *argp1 = 0;
+  if (argc != 0) rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)", argc);
+  int res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_TagLib__MP4__File, 0);
+  if (!SWIG_IsOK(res1)) return Qnil;
+  arg1 = reinterpret_cast<TagLib::MP4::File *>(argp1);
+  return taglib_mp4_save_chapters(arg1);
+}
+
 
 
 /* -------- TYPE CONVERSION AND EQUIVALENCE RULES (BEGIN) -------- */
@@ -6307,8 +6366,12 @@ SWIGEXPORT void Init_taglib_mp4(void) {
   rb_define_method(SwigClassFile.klass, "strip", VALUEFUNC(_wrap_File_strip), -1);
   rb_define_method(SwigClassFile.klass, "mp4_tag?", VALUEFUNC(_wrap_File_mp4_tagq___), -1);
   rb_define_method(SwigClassFile.klass, "close", VALUEFUNC(_wrap_File_close), -1);
+  rb_define_method(SwigClassFile.klass, "_chapter_style", VALUEFUNC(_wrap_File__chapter_style), -1);
+  rb_define_method(SwigClassFile.klass, "_chapters", VALUEFUNC(_wrap_File__chapters), -1);
+  rb_define_method(SwigClassFile.klass, "_set_chapters", VALUEFUNC(_wrap_File__set_chapters), -1);
+  rb_define_method(SwigClassFile.klass, "_remove_chapters", VALUEFUNC(_wrap_File__remove_chapters), -1);
+  rb_define_method(SwigClassFile.klass, "_save_chapters", VALUEFUNC(_wrap_File__save_chapters), -1);
   SwigClassFile.mark = 0;
   SwigClassFile.destroy = (void (*)(void *)) free_taglib_mp4_file;
   SwigClassFile.trackObjects = 1;
 }
-
