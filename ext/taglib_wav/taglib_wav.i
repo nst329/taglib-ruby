@@ -42,6 +42,13 @@ namespace TagLib {
 %ignore TagLib::RIFF::WAV::File::removeUnsupportedProperties;
 
 %ignore TagLib::RIFF::WAV::File::InfoTag;
+// Keep TagLib 2.3 metadata extensions out of the existing public API.
+%ignore TagLib::RIFF::WAV::File::iXMLData;
+%ignore TagLib::RIFF::WAV::File::setiXMLData;
+%ignore TagLib::RIFF::WAV::File::BEXTData;
+%ignore TagLib::RIFF::WAV::File::setBEXTData;
+%ignore TagLib::RIFF::WAV::File::hasiXMLData;
+%ignore TagLib::RIFF::WAV::File::hasBEXTData;
 
 %rename(id3v2_tag) TagLib::RIFF::WAV::File::ID3v2Tag;
 %rename("id3v2_tag?") TagLib::RIFF::WAV::File::hasID3v2Tag;

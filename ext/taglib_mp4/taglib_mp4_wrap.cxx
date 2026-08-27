@@ -1943,11 +1943,15 @@ template <typename T> T SwigValueInit() {
 #include <stdexcept>
 
 
+#include <cstdlib>
+#include <cstring>
 #include <taglib/taglib.h>
 #include <taglib/mp4file.h>
 #include <taglib/mp4properties.h>
 #include <taglib/mp4tag.h>
 #include <taglib/mp4atom.h>
+#include <taglib/mp4nerochapterlist.h>
+#include <taglib/mp4qtchapterlist.h>
 
 
 #include <taglib/tstring.h>
@@ -2123,6 +2127,220 @@ TagLib::MP4::CoverArtList ruby_array_to_taglib_cover_art_list(VALUE ary) {
     result.append(*c);
   }
   return result;
+}
+
+enum TagLibRubyMP4ChapterStyle {
+  TAGLIB_RUBY_MP4_STYLE_NONE = 0,
+  TAGLIB_RUBY_MP4_STYLE_NERO = 1,
+  TAGLIB_RUBY_MP4_STYLE_QUICKTIME = 2,
+  TAGLIB_RUBY_MP4_STYLE_BOTH = 3,
+  TAGLIB_RUBY_MP4_STYLE_ANY = 4
+};
+
+static VALUE taglib_mp4_chapter_class() {
+  return rb_path2class("TagLib::MP4::Chapter");
+}
+
+static VALUE taglib_mp4_chapter_to_ruby(const TagLib::MP4::Chapter &chapter) {
+  VALUE title = taglib_string_to_ruby_string(chapter.title());
+  VALUE start_time = LL2NUM(chapter.startTime());
+  return rb_funcall(taglib_mp4_chapter_class(), rb_intern("new"), 2, start_time, title);
+}
+
+static VALUE taglib_mp4_chapters_to_ruby(const TagLib::MP4::ChapterList &chapters) {
+  VALUE result = rb_ary_new2(chapters.size());
+  for (TagLib::MP4::ChapterList::ConstIterator it = chapters.begin(); it != chapters.end(); ++it) {
+    rb_ary_push(result, taglib_mp4_chapter_to_ruby(*it));
+  }
+  return result;
+}
+
+static TagLib::MP4::ChapterList taglib_mp4_chapters_from_ruby(VALUE value, TagLib::MP4::File *file) {
+  Check_Type(value, T_ARRAY);
+  TagLib::MP4::ChapterList result;
+  long long previous_start_time = -1;
+  TagLib::AudioProperties *properties = file->audioProperties();
+  const int length = properties ? properties->lengthInMilliseconds() : 0;
+
+  for (long i = 0; i < RARRAY_LEN(value); ++i) {
+    VALUE entry = rb_ary_entry(value, i);
+    if (!rb_obj_is_kind_of(entry, taglib_mp4_chapter_class())) {
+      rb_raise(rb_eArgError, "chapter must be a TagLib::MP4::Chapter");
+    }
+    if (!rb_respond_to(entry, rb_intern("start_time")) || !rb_respond_to(entry, rb_intern("title"))) {
+      rb_raise(rb_eArgError, "chapter must respond to start_time and title");
+    }
+
+    VALUE start_value = rb_funcall(entry, rb_intern("start_time"), 0);
+    if (!RB_INTEGER_TYPE_P(start_value)) {
+      rb_raise(rb_eArgError, "chapter start_time must be an Integer");
+    }
+    long long start_time = NUM2LL(start_value);
+    if (start_time < 0) {
+      rb_raise(rb_eArgError, "chapter start_time must not be negative");
+    }
+    if (i > 0 && start_time <= previous_start_time) {
+      rb_raise(rb_eArgError, "chapter start_time must be strictly increasing");
+    }
+    if (length > 0 && start_time > length) {
+      rb_raise(rb_eArgError, "chapter start_time must not exceed the file duration");
+    }
+
+    VALUE title = rb_funcall(entry, rb_intern("title"), 0);
+    Check_Type(title, T_STRING);
+    if (rb_enc_get_index(title) != rb_utf8_encindex() ||
+        !RTEST(rb_funcall(title, rb_intern("valid_encoding?"), 0))) {
+      rb_raise(rb_eArgError, "chapter title must be valid UTF-8");
+    }
+    if (memchr(RSTRING_PTR(title), '\0', RSTRING_LEN(title)) != NULL) {
+      rb_raise(rb_eArgError, "chapter title must not contain NUL bytes");
+    }
+
+    result.append(TagLib::MP4::Chapter(ruby_string_to_taglib_string(title), start_time));
+    previous_start_time = start_time;
+  }
+  return result;
+}
+
+static bool taglib_mp4_chapter_lists_equal(const TagLib::MP4::ChapterList &left,
+                                           const TagLib::MP4::ChapterList &right) {
+  if (left.size() != right.size()) {
+    return false;
+  }
+  TagLib::MP4::ChapterList::ConstIterator lit = left.begin();
+  TagLib::MP4::ChapterList::ConstIterator rit = right.begin();
+  for (; lit != left.end(); ++lit, ++rit) {
+    if (lit->title() != rit->title() ||
+        std::llabs(lit->startTime() - rit->startTime()) > 1) {
+      return false;
+    }
+  }
+  return true;
+}
+
+static TagLib::MP4::ChapterList taglib_mp4_read_nero(TagLib::MP4::File *file, bool *present = NULL) {
+  TagLib::MP4::NeroChapterList holder;
+  bool exists = holder.read(file);
+  if (present) {
+    *present = exists;
+  }
+  return holder.chapters();
+}
+
+static TagLib::MP4::ChapterList taglib_mp4_read_quicktime(TagLib::MP4::File *file, bool *present = NULL) {
+  TagLib::MP4::QtChapterList holder;
+  bool exists = holder.read(file);
+  if (present) {
+    *present = exists;
+  }
+  return holder.chapters();
+}
+
+static VALUE taglib_mp4_chapter_style(TagLib::MP4::File *file) {
+  bool nero_present = false;
+  bool quicktime_present = false;
+  taglib_mp4_read_nero(file, &nero_present);
+  taglib_mp4_read_quicktime(file, &quicktime_present);
+  if (nero_present && quicktime_present) {
+    return ID2SYM(rb_intern("both"));
+  }
+  if (nero_present) {
+    return ID2SYM(rb_intern("nero"));
+  }
+  if (quicktime_present) {
+    return ID2SYM(rb_intern("quicktime"));
+  }
+  return ID2SYM(rb_intern("none"));
+}
+
+static VALUE taglib_mp4_chapters(TagLib::MP4::File *file, int style) {
+  if (style == TAGLIB_RUBY_MP4_STYLE_NERO) {
+    return taglib_mp4_chapters_to_ruby(file->neroChapters());
+  }
+  if (style == TAGLIB_RUBY_MP4_STYLE_QUICKTIME) {
+    return taglib_mp4_chapters_to_ruby(file->qtChapters());
+  }
+
+  bool nero_present = false;
+  bool quicktime_present = false;
+  TagLib::MP4::ChapterList nero = taglib_mp4_read_nero(file, &nero_present);
+  TagLib::MP4::ChapterList quicktime = taglib_mp4_read_quicktime(file, &quicktime_present);
+  if (nero_present && quicktime_present && !taglib_mp4_chapter_lists_equal(nero, quicktime)) {
+    VALUE error = rb_path2class("TagLib::MP4::ChapterConflictError");
+    rb_raise(error, "Nero and QuickTime chapters differ");
+  }
+  return taglib_mp4_chapters_to_ruby(nero_present ? nero : quicktime);
+}
+
+static void taglib_mp4_set_chapters(TagLib::MP4::File *file, VALUE value, int style) {
+  TagLib::MP4::ChapterList chapters = taglib_mp4_chapters_from_ruby(value, file);
+  if (style == TAGLIB_RUBY_MP4_STYLE_NERO || style == TAGLIB_RUBY_MP4_STYLE_BOTH) {
+    file->setNeroChapters(chapters);
+  }
+  if (style == TAGLIB_RUBY_MP4_STYLE_QUICKTIME || style == TAGLIB_RUBY_MP4_STYLE_BOTH) {
+    file->setQtChapters(chapters);
+  }
+}
+
+static bool taglib_mp4_remove_chapters(TagLib::MP4::File *file, int style) {
+  TagLib::MP4::ChapterList empty;
+  if (style == TAGLIB_RUBY_MP4_STYLE_NERO || style == TAGLIB_RUBY_MP4_STYLE_BOTH) {
+    file->setNeroChapters(empty);
+  }
+  if (style == TAGLIB_RUBY_MP4_STYLE_QUICKTIME || style == TAGLIB_RUBY_MP4_STYLE_BOTH) {
+    file->setQtChapters(empty);
+  }
+  return true;
+}
+
+static bool taglib_mp4_save_chapter_list(TagLib::MP4::File *file,
+                                         const TagLib::MP4::ChapterList &desired,
+                                         bool nero) {
+  bool present = false;
+  TagLib::MP4::ChapterList current = nero
+    ? taglib_mp4_read_nero(file, &present)
+    : taglib_mp4_read_quicktime(file, &present);
+  if (present && taglib_mp4_chapter_lists_equal(current, desired)) {
+    return true;
+  }
+  if (desired.isEmpty()) {
+    return nero ? TagLib::MP4::NeroChapterList().remove(file)
+                : TagLib::MP4::QtChapterList().remove(file);
+  }
+  if (nero) {
+    TagLib::MP4::NeroChapterList holder;
+    holder.setChapters(desired);
+    return holder.write(file);
+  }
+  TagLib::MP4::QtChapterList holder;
+  holder.setChapters(desired);
+  return holder.write(file);
+}
+
+static bool taglib_mp4_save_chapters(TagLib::MP4::File *file) {
+  if (file->readOnly() || !file->isValid()) {
+    VALUE error = rb_path2class("TagLib::MP4::ChapterSaveError");
+    rb_raise(error, "MP4 file is not writable or valid");
+  }
+
+  bool nero_present = false;
+  bool quicktime_present = false;
+  TagLib::MP4::ChapterList nero = taglib_mp4_read_nero(file, &nero_present);
+  TagLib::MP4::ChapterList quicktime = taglib_mp4_read_quicktime(file, &quicktime_present);
+  TagLib::MP4::ChapterList desired_nero = file->neroChapters();
+  TagLib::MP4::ChapterList desired_quicktime = file->qtChapters();
+  bool nero_changed = !taglib_mp4_chapter_lists_equal(nero, desired_nero) || nero_present != !desired_nero.isEmpty();
+  bool quicktime_changed = !taglib_mp4_chapter_lists_equal(quicktime, desired_quicktime) || quicktime_present != !desired_quicktime.isEmpty();
+
+  if (nero_changed && !taglib_mp4_save_chapter_list(file, desired_nero, true)) {
+    VALUE error = rb_path2class("TagLib::MP4::ChapterSaveError");
+    rb_raise(error, "failed to save Nero chapters");
+  }
+  if (quicktime_changed && !taglib_mp4_save_chapter_list(file, desired_quicktime, false)) {
+    VALUE error = rb_path2class("TagLib::MP4::ChapterSaveError");
+    rb_raise(error, "failed to save QuickTime chapters");
+  }
+  return true;
 }
 
 
@@ -2499,6 +2717,25 @@ SWIGINTERN VALUE TagLib_MP4_Tag_remove_item(TagLib::MP4::Tag *self,TagLib::Strin
   }
 SWIGINTERN void TagLib_MP4_File_close(TagLib::MP4::File *self){
     free_taglib_mp4_file(self);
+  }
+SWIGINTERN VALUE TagLib_MP4_File__chapter_style(TagLib::MP4::File *self){
+    return taglib_mp4_chapter_style(self);
+  }
+SWIGINTERN VALUE TagLib_MP4_File__chapters(TagLib::MP4::File *self,int style){
+    return taglib_mp4_chapters(self, style);
+  }
+SWIGINTERN void TagLib_MP4_File__set_chapters(TagLib::MP4::File *self,VALUE chapters,int style){
+    taglib_mp4_set_chapters(self, chapters, style);
+  }
+SWIGINTERN VALUE TagLib_MP4_File__remove_chapters(TagLib::MP4::File *self,int style){
+    if (!taglib_mp4_remove_chapters(self, style)) {
+      VALUE error = rb_path2class("TagLib::MP4::ChapterSaveError");
+      rb_raise(error, "failed to remove chapters");
+    }
+    return Qtrue;
+  }
+SWIGINTERN VALUE TagLib_MP4_File__save_chapters(TagLib::MP4::File *self){
+    return taglib_mp4_save_chapters(self) ? Qtrue : Qfalse;
   }
 
   static void free_taglib_mp4_file(void *ptr) {
@@ -5816,6 +6053,149 @@ fail:
 }
 
 
+SWIGINTERN VALUE
+_wrap_File__chapter_style(int argc, VALUE *argv, VALUE self) {
+  TagLib::MP4::File *arg1 = (TagLib::MP4::File *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  VALUE result;
+  VALUE vresult = Qnil;
+  
+  if ((argc < 0) || (argc > 0)) {
+    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
+  }
+  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_TagLib__MP4__File, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "TagLib::MP4::File *","_chapter_style", 1, self )); 
+  }
+  arg1 = reinterpret_cast< TagLib::MP4::File * >(argp1);
+  result = (VALUE)TagLib_MP4_File__chapter_style(arg1);
+  vresult = result;
+  return vresult;
+fail:
+  return Qnil;
+}
+
+
+SWIGINTERN VALUE
+_wrap_File__chapters(int argc, VALUE *argv, VALUE self) {
+  TagLib::MP4::File *arg1 = (TagLib::MP4::File *) 0 ;
+  int arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val2 ;
+  int ecode2 = 0 ;
+  VALUE result;
+  VALUE vresult = Qnil;
+  
+  if ((argc < 1) || (argc > 1)) {
+    rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)",argc); SWIG_fail;
+  }
+  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_TagLib__MP4__File, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "TagLib::MP4::File *","_chapters", 1, self )); 
+  }
+  arg1 = reinterpret_cast< TagLib::MP4::File * >(argp1);
+  ecode2 = SWIG_AsVal_int(argv[0], &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError( "", "int","_chapters", 2, argv[0] ));
+  } 
+  arg2 = static_cast< int >(val2);
+  result = (VALUE)TagLib_MP4_File__chapters(arg1,arg2);
+  vresult = result;
+  return vresult;
+fail:
+  return Qnil;
+}
+
+
+SWIGINTERN VALUE
+_wrap_File__set_chapters(int argc, VALUE *argv, VALUE self) {
+  TagLib::MP4::File *arg1 = (TagLib::MP4::File *) 0 ;
+  VALUE arg2 = (VALUE) 0 ;
+  int arg3 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val3 ;
+  int ecode3 = 0 ;
+  
+  if ((argc < 2) || (argc > 2)) {
+    rb_raise(rb_eArgError, "wrong # of arguments(%d for 2)",argc); SWIG_fail;
+  }
+  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_TagLib__MP4__File, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "TagLib::MP4::File *","_set_chapters", 1, self )); 
+  }
+  arg1 = reinterpret_cast< TagLib::MP4::File * >(argp1);
+  arg2 = argv[0];
+  ecode3 = SWIG_AsVal_int(argv[1], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), Ruby_Format_TypeError( "", "int","_set_chapters", 3, argv[1] ));
+  } 
+  arg3 = static_cast< int >(val3);
+  TagLib_MP4_File__set_chapters(arg1,arg2,arg3);
+  return Qnil;
+fail:
+  return Qnil;
+}
+
+
+SWIGINTERN VALUE
+_wrap_File__remove_chapters(int argc, VALUE *argv, VALUE self) {
+  TagLib::MP4::File *arg1 = (TagLib::MP4::File *) 0 ;
+  int arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val2 ;
+  int ecode2 = 0 ;
+  VALUE result;
+  VALUE vresult = Qnil;
+  
+  if ((argc < 1) || (argc > 1)) {
+    rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)",argc); SWIG_fail;
+  }
+  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_TagLib__MP4__File, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "TagLib::MP4::File *","_remove_chapters", 1, self )); 
+  }
+  arg1 = reinterpret_cast< TagLib::MP4::File * >(argp1);
+  ecode2 = SWIG_AsVal_int(argv[0], &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError( "", "int","_remove_chapters", 2, argv[0] ));
+  } 
+  arg2 = static_cast< int >(val2);
+  result = (VALUE)TagLib_MP4_File__remove_chapters(arg1,arg2);
+  vresult = result;
+  return vresult;
+fail:
+  return Qnil;
+}
+
+
+SWIGINTERN VALUE
+_wrap_File__save_chapters(int argc, VALUE *argv, VALUE self) {
+  TagLib::MP4::File *arg1 = (TagLib::MP4::File *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  VALUE result;
+  VALUE vresult = Qnil;
+  
+  if ((argc < 0) || (argc > 0)) {
+    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
+  }
+  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_TagLib__MP4__File, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "TagLib::MP4::File *","_save_chapters", 1, self )); 
+  }
+  arg1 = reinterpret_cast< TagLib::MP4::File * >(argp1);
+  result = (VALUE)TagLib_MP4_File__save_chapters(arg1);
+  vresult = result;
+  return vresult;
+fail:
+  return Qnil;
+}
+
+
 
 /* -------- TYPE CONVERSION AND EQUIVALENCE RULES (BEGIN) -------- */
 
@@ -6218,6 +6598,7 @@ SWIGEXPORT void Init_taglib_mp4(void) {
   rb_define_const(SwigClassItem.klass, "Type_StringList", SWIG_From_int(static_cast< int >(TagLib::MP4::Item::Type::StringList)));
   rb_define_const(SwigClassItem.klass, "Type_ByteVectorList", SWIG_From_int(static_cast< int >(TagLib::MP4::Item::Type::ByteVectorList)));
   rb_define_const(SwigClassItem.klass, "Type_CoverArtList", SWIG_From_int(static_cast< int >(TagLib::MP4::Item::Type::CoverArtList)));
+  rb_define_const(SwigClassItem.klass, "Type_Stem", SWIG_From_int(static_cast< int >(TagLib::MP4::Item::Type::Stem)));
   rb_define_method(SwigClassItem.klass, "to_int", VALUEFUNC(_wrap_Item_to_int), -1);
   rb_define_method(SwigClassItem.klass, "to_byte", VALUEFUNC(_wrap_Item_to_byte), -1);
   rb_define_method(SwigClassItem.klass, "to_uint", VALUEFUNC(_wrap_Item_to_uint), -1);
@@ -6307,6 +6688,11 @@ SWIGEXPORT void Init_taglib_mp4(void) {
   rb_define_method(SwigClassFile.klass, "strip", VALUEFUNC(_wrap_File_strip), -1);
   rb_define_method(SwigClassFile.klass, "mp4_tag?", VALUEFUNC(_wrap_File_mp4_tagq___), -1);
   rb_define_method(SwigClassFile.klass, "close", VALUEFUNC(_wrap_File_close), -1);
+  rb_define_method(SwigClassFile.klass, "_chapter_style", VALUEFUNC(_wrap_File__chapter_style), -1);
+  rb_define_method(SwigClassFile.klass, "_chapters", VALUEFUNC(_wrap_File__chapters), -1);
+  rb_define_method(SwigClassFile.klass, "_set_chapters", VALUEFUNC(_wrap_File__set_chapters), -1);
+  rb_define_method(SwigClassFile.klass, "_remove_chapters", VALUEFUNC(_wrap_File__remove_chapters), -1);
+  rb_define_method(SwigClassFile.klass, "_save_chapters", VALUEFUNC(_wrap_File__save_chapters), -1);
   SwigClassFile.mark = 0;
   SwigClassFile.destroy = (void (*)(void *)) free_taglib_mp4_file;
   SwigClassFile.trackObjects = 1;

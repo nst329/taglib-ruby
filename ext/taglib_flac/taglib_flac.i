@@ -43,6 +43,14 @@
 %rename("id3v1_tag?") TagLib::FLAC::File::hasID3v1Tag;
 %rename("id3v2_tag?") TagLib::FLAC::File::hasID3v2Tag;
 
+// Keep TagLib 2.3 metadata extensions out of the existing public API.
+%ignore TagLib::FLAC::File::iXMLData;
+%ignore TagLib::FLAC::File::setiXMLData;
+%ignore TagLib::FLAC::File::BEXTData;
+%ignore TagLib::FLAC::File::setBEXTData;
+%ignore TagLib::FLAC::File::hasiXMLData;
+%ignore TagLib::FLAC::File::hasBEXTData;
+
 %include <taglib/flacfile.h>
 
 // Unlink Ruby objects from the deleted C++ objects. Otherwise Ruby code

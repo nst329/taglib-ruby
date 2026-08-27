@@ -172,6 +172,7 @@ Gem::Specification.new do |s|
     'test/id3v2_write_test.rb',
     'test/mp4_file_test.rb',
     'test/mp4_file_write_test.rb',
+    'test/mp4_chapters_test.rb',
     'test/mp4_items_test.rb',
     'test/mpeg_file_test.rb',
     'test/tag_test.rb',
