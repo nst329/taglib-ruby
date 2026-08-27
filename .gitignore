@@ -16,6 +16,7 @@ Makefile
 /.yardoc
 /Gemfile.lock
 /doc
+/docs/adr/
 /pkg
 /tmp
 /test/data/add-relative-volume
