@@ -29,7 +29,7 @@ jobs:
       SWIG_DIR: .swig-v4.1.1
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - uses: ruby/setup-ruby@v1
         with:
@@ -37,7 +37,7 @@ jobs:
 
       - name: Cache SWIG v4.1.1
         id: cache-swig
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/${{ env.SWIG_DIR }}
           key: swig-${{ matrix.os }}-v4.1.1
@@ -60,7 +60,7 @@ jobs:
 
       - name: Cache TagLib (C++)
         id: cache-taglib
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: |
             tmp/${{ env.PLATFORM }}/taglib-${{ env.TAGLIB_VERSION }}
