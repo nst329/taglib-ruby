@@ -107,6 +107,11 @@ if you don't have it):
 
     bundle install
 
+GitHub Actions installs the optional `kramdown` dependency automatically. To
+generate YARD documentation locally, install it explicitly:
+
+    gem install kramdown -v '~> 2.3.0'
+
 Regenerate SWIG wrappers if you made changes in `.i` files (use version 3.0.7 of
 SWIG - 3.0.8 through 3.0.12 will not work):
 

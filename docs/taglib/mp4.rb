@@ -1,4 +1,50 @@
 module TagLib::MP4
+  # Raised when an MP4 artwork format is not supported by the safe Ruby API.
+  class UnsupportedArtworkError < ArgumentError
+  end
+
+  # Immutable Ruby-owned MP4 cover-art data.
+  class Artwork
+    # @return [Symbol] `:jpeg`, `:png`, or `:bmp`
+    attr_reader :format
+
+    # @return [String] image data encoded as binary bytes
+    attr_reader :data
+
+    # @param format [Symbol] `:jpeg`, `:png`, or `:bmp`
+    # @param data [String] image data
+    # @raise [ArgumentError] if the data is invalid
+    # @raise [UnsupportedArtworkError] if the format is unsupported
+    def initialize(format:, data:)
+    end
+
+    # @return [String] MIME type derived from {#format}
+    def mime_type
+    end
+  end
+
+  # Immutable MP4 iTunes reverse-DNS content rating.
+  class ContentRating
+    # @return [String] rating system, such as `"mpaa"`
+    attr_reader :system
+
+    # @return [String] rating, such as `"R"`
+    attr_reader :rating
+
+    # @return [Integer] iTunes rating identifier
+    attr_reader :id
+
+    # @param system [String]
+    # @param rating [String]
+    # @param id [Integer]
+    def initialize(system:, rating:, id:)
+    end
+
+    # @return [String] reverse-DNS wire value
+    def to_s
+    end
+  end
+
   # Immutable MP4 chapter value copied between Ruby and TagLib.
   #
   # @param [Integer] start_time chapter start time in milliseconds
@@ -192,6 +238,56 @@ module TagLib::MP4
   end
 
   class Tag < TagLib::Tag
+    # Return a managed MP4/iTunes property.
+    # @param name [String, Symbol] property name
+    # @return [String, ContentRating, nil] first value, or nil if absent
+    def property(name)
+    end
+
+    # Return all values for a managed MP4/iTunes property.
+    # @return [Array<String, ContentRating>]
+    def property_values(name)
+    end
+
+    # Return all managed properties currently present.
+    # @return [Hash<String, Array<String, ContentRating>>]
+    def properties
+    end
+
+    # Set one managed MP4/iTunes property in memory.
+    # @param name [String, Symbol]
+    # @param value [String, ContentRating]
+    # @return [TagLib::MP4::Tag] self
+    def set_property(name, value)
+    end
+
+    # Set multiple managed MP4/iTunes properties after validating all values.
+    # @param values [Hash<String, String, ContentRating>]
+    # @return [TagLib::MP4::Tag] self
+    def set_properties(values)
+    end
+
+    # Remove one managed MP4/iTunes property in memory.
+    # @return [TagLib::MP4::Tag] self
+    def remove_property(name)
+    end
+
+    # Return Ruby-owned copies of all MP4 cover art.
+    # @return [Array<TagLib::MP4::Artwork>]
+    def artwork
+    end
+
+    # Replace all MP4 cover art in memory.
+    # @param images [Array<TagLib::MP4::Artwork>]
+    # @return [TagLib::MP4::Tag] self
+    def set_artwork(images)
+    end
+
+    # Remove all MP4 cover art in memory.
+    # @return [TagLib::MP4::Tag] self
+    def remove_artwork
+    end
+
     # @return [TagLib::MP4::ItemMap] The map containing all the items in the tag.
     #
     # @since 1.0.0

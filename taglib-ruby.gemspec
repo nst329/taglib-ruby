@@ -24,7 +24,6 @@ Gem::Specification.new do |s|
   s.requirements = ['TagLib C++ >= 2.3.1 (libtag1-dev in Debian/Ubuntu, taglib-devel in Fedora/RHEL)']
 
   s.add_development_dependency 'bundler', '>= 1.2', '< 3'
-  s.add_development_dependency 'kramdown', '~> 2.3.0'
   s.add_development_dependency 'rake-compiler', '~> 0.9'
   s.add_development_dependency 'shoulda-context', '~> 2.0'
   s.add_development_dependency 'test-unit', '~> 3.5'
@@ -60,6 +59,8 @@ Gem::Specification.new do |s|
     'Rakefile',
     'docs/default/fulldoc/html/css/common.css',
     'docs/mp4-chapter-api-design.md',
+    'docs/mp4-atomicparsley-replacement-design.md',
+    'docs/mp4-atomicparsley-replacement-validation.md',
     'docs/taglib/aiff.rb',
     'docs/taglib/base.rb',
     'docs/taglib/flac.rb',
@@ -175,6 +176,8 @@ Gem::Specification.new do |s|
     'test/mp4_file_test.rb',
     'test/mp4_file_write_test.rb',
     'test/mp4_chapters_test.rb',
+    'test/mp4_metadata_preservation_test.rb',
+    'test/mp4_metadata_api_test.rb',
     'test/mp4_items_test.rb',
     'test/mpeg_file_test.rb',
     'test/tag_test.rb',

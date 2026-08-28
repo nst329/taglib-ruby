@@ -85,6 +85,9 @@ jobs:
       - name: Run Tests (taglib-ruby)
         run: bundle exec rake test
 
+      - name: Run MP4 metadata API test
+        run: bundle exec ruby -I. test/mp4_metadata_api_test.rb
+
       - name: Check gemspec file list
         run: bundle exec rake gemspec_check
 
