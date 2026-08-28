@@ -1,4 +1,4 @@
-# This is the top-level module of taglib-ruby.
+# This is the top-level module of taglib-ruby-plus.
 #
 # Where to find what:
 #

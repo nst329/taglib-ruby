@@ -5,7 +5,7 @@
 | 項目 | 内容 |
 |---|---|
 | TagLib | 2.3.1以上（`>= 2.3.1`） |
-| taglib-ruby | 2.3.1（TagLibの要求バージョンとは別のプロジェクト番号） |
+| taglib-ruby-plus | 2.3.1（TagLibの要求バージョンとは別のプロジェクト番号） |
 | 初期対応OS | macOS、Linux |
 | チャプター形式 | Nero、QuickTime |
 | 保存 | 通常保存、チャプター専用保存 |
@@ -291,11 +291,11 @@ TagLib 2.3.1にはチャプター専用保存の公開APIがないため、既�
 - 公開APIと使用例が`docs/taglib/mp4.rb`に記載される。
 - READMEにTagLib 2.3.1以上が必要であることを記載する。
 - CHANGELOGに追加API、互換性、Windowsが初期保証対象外であることを記載する。
-- taglib-rubyのバージョンは2.3.1とする。番号はTagLibの要求バージョンとは別管理だが、今回は同じ数値になる。
+- taglib-ruby-plusのバージョンは2.3.1とする。番号はTagLibの要求バージョンとは別管理だが、今回は同じ数値になる。
 
 ## 10. gem配布
 
-taglib-rubyはsource gemとして配布する。gemのインストール時にネイティブ
+taglib-ruby-plusはsource gemとして配布する。gemのインストール時にネイティブ
 拡張をビルドし、利用者の環境にあるTagLib 2.3.1以上へリンクする。
 
 - gemバージョンは`2.3.1`、TagLibの最低バージョンは`2.3.1`として別管理する。

@@ -5,15 +5,15 @@ $LOAD_PATH.push File.expand_path('lib', __dir__)
 require 'taglib/version'
 
 Gem::Specification.new do |s|
-  s.name        = 'taglib-ruby'
+  s.name        = 'taglib-ruby-plus'
   s.version     = TagLib::Version::STRING
   s.authors     = ['Robin Stocker', 'Jacob Vosmaer', 'Thomas Chevereau']
   s.email       = ['robin@nibor.org']
-  s.homepage    = 'http://robinst.github.io/taglib-ruby/'
+  s.homepage    = 'https://github.com/nst329/taglib-ruby-plus'
   s.licenses    = ['MIT']
-  s.summary     = 'Ruby interface for the taglib C++ library'
+  s.summary     = 'Extended Ruby interface for the TagLib C++ library'
   s.description = <<~DESC
-    Ruby interface for the taglib C++ library, for reading and writing
+    Extended Ruby interface for the TagLib C++ library, for reading and writing
     meta-data (tags) of many audio formats.
 
     In contrast to other libraries, this one wraps the C++ API using SWIG,
@@ -61,6 +61,7 @@ Gem::Specification.new do |s|
     'docs/mp4-chapter-api-design.md',
     'docs/mp4-atomicparsley-replacement-design.md',
     'docs/mp4-atomicparsley-replacement-validation.md',
+    'docs/ADR/2026-08-28-taglib-ruby-plusへの名称変更.md',
     'docs/taglib/aiff.rb',
     'docs/taglib/base.rb',
     'docs/taglib/flac.rb',
@@ -111,7 +112,7 @@ Gem::Specification.new do |s|
     'ext/taglib_wav/taglib_wav_wrap.cxx',
     'ext/valgrind-suppressions.txt',
     'ext/win.cmake',
-    'lib/taglib.rb',
+    'lib/taglib_plus.rb',
     'lib/taglib/aiff.rb',
     'lib/taglib/base.rb',
     'lib/taglib/flac.rb',
@@ -123,7 +124,7 @@ Gem::Specification.new do |s|
     'lib/taglib/version.rb',
     'lib/taglib/vorbis.rb',
     'lib/taglib/wav.rb',
-    'taglib-ruby.gemspec',
+    'taglib-ruby-plus.gemspec',
     'tasks/docs_coverage.rake',
     'tasks/build.rb',
     'tasks/ext.rake',

@@ -17,6 +17,8 @@ Makefile
 /Gemfile.lock
 /doc
 /docs/adr/
+!/Docs/ADR/
+!/Docs/ADR/2026-08-28-taglib-ruby-plusへの名称変更.md
 /pkg
 /tmp
 /test/data/add-relative-volume

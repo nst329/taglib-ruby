@@ -20,7 +20,7 @@ task default: %i[compile test]
 require 'yard'
 YARD::Rake::YardocTask.new do |t|
   version = TagLib::Version::STRING
-  t.options = ['--title', "taglib-ruby #{version}"]
+  t.options = ['--title', "taglib-ruby-plus #{version}"]
 end
 
 $gemspec = Bundler::GemHelper.gemspec

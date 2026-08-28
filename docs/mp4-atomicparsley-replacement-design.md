@@ -117,7 +117,7 @@ tag.remove_artwork        # covrを全削除
 
 ## テスト計画
 
-### taglib-ruby
+### taglib-ruby-plus
 
 - 全プロパティのread/write/removeとreverse-DNS `contentRating`。
 - 未知item、複数artwork、QuickTime/Nero両形式のチャプターを通常保存後に保持。

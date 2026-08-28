@@ -1,5 +1,8 @@
 # frozen-string-literal: true
 
+# Loads the complete taglib-ruby-plus API while retaining TagLib as the
+# namespace of the wrapped C++ library.
+
 platform = RUBY_PLATFORM.split('-')[1]
 if platform == 'mingw32'
   # Enable loading of pre-compiled libtag.dll

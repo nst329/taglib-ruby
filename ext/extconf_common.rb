@@ -43,7 +43,7 @@ end
 
 unless have_library('tag')
   error <<~DESC
-    You must have taglib installed in order to use taglib-ruby.
+    You must have TagLib installed in order to use taglib-ruby-plus.
 
     Debian/Ubuntu: sudo apt-get install libtag1-dev
     Fedora/RHEL: sudo dnf install taglib-devel

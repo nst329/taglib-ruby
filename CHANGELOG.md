@@ -1,5 +1,5 @@
-Changes in Releases of taglib-ruby
-==================================
+Changes in Releases of taglib-ruby-plus
+=======================================
 
 All notable changes to this project will be documented in this file.
 
@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased
 ### Added
+- Rename the gem to `taglib-ruby-plus` and its public entry point to
+  `require 'taglib_plus'` while retaining the `TagLib` namespace.
 - Add high-level MP4 iTunes property and artwork APIs.
 - Add Ruby-owned MP4 artwork and content-rating value objects.
 - Add CI coverage for the MP4 metadata API and packaged gem smoke test.

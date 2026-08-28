@@ -12,7 +12,7 @@ MP4 property/artworkの高レベルAPIを追加した。通常の`File#save`に�
 
 - ブランチ: `investigate/mp4-atomicparsley-replacement`
 - TagLib: 2.3.1
-- taglib-rubyのローカルネイティブ拡張を使用
+- taglib-ruby-plusのローカルネイティブ拡張を使用
 - `test/data/mp4.m4a`のコピーを使い、保存後にTagLibとAtomicParsleyで再読込
 - 既存ファイルは変更していない
 

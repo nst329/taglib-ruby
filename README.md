@@ -1,24 +1,27 @@
-# taglib-ruby
+# taglib-ruby-plus
 
-Ruby interface for the [TagLib C++ library][taglib], for reading and
-writing meta-data (tags) of many audio formats.
+Extended Ruby interface for the [TagLib C++ library][taglib], based on the
+original [taglib-ruby][original], for reading and writing metadata (tags) of
+many audio formats.
 
 In contrast to other libraries, this one wraps the full C++ API, not
 only the minimal C API. This means that all tag data can be accessed,
 e.g. cover art of ID3v2 or custom fields of Ogg Vorbis comments.
 
-`taglib-ruby` currently supports the following:
+`taglib-ruby-plus` currently supports the following:
 
 * Reading/writing common tag data of all formats that TagLib supports
 * Reading/writing ID3v1 and ID3v2 including ID3v2.4 and Unicode
 * Reading/writing Ogg Vorbis comments
 * Reading/writing MP4 tags (.m4a)
+* Reading/writing Nero and QuickTime MP4 chapters
+* Reading/writing MP4 iTunes properties and multiple artwork items
 * Reading audio properties (e.g. bitrate) of the above formats
 
 Contributions for more coverage of the library are very welcome.
 
 [![Gem version][gem-img]][gem-link]
-[![ci](https://github.com/robinst/taglib-ruby/workflows/ci/badge.svg)](https://github.com/robinst/taglib-ruby/actions?query=workflow%3Aci)
+[![ci](https://github.com/nst329/taglib-ruby-plus/actions/workflows/ci.yml/badge.svg)](https://github.com/nst329/taglib-ruby-plus/actions/workflows/ci.yml)
 
 ## Installation
 
@@ -32,14 +35,14 @@ The TagLib shared library is also required at runtime.
 * Brew: `brew install taglib`
 * MacPorts: `sudo port install taglib`
 
-Then install taglib-ruby 2.3.1:
+Then install taglib-ruby-plus 2.3.1:
 
-    gem install taglib-ruby --version 2.3.1
+    gem install taglib-ruby-plus --version 2.3.1
 
 ### MacOS
 
 Depending on your brew setup, TagLib might be installed in different locations,
-which makes it hard for taglib-ruby to find it. To get the library location, run:
+which makes it hard for taglib-ruby-plus to find it. To get the library location, run:
 
     $ brew info taglib
     taglib: stable 2.3.1 (bottled), HEAD
@@ -51,22 +54,27 @@ which makes it hard for taglib-ruby to find it. To get the library location, run
 Note the line with the path at the end. Provide that using the `TAGLIB_DIR`
 environment variable when installing, like this:
 
-    TAGLIB_DIR=/opt/homebrew/opt/taglib gem install taglib-ruby --version 2.3.1
+    TAGLIB_DIR=/opt/homebrew/opt/taglib gem install taglib-ruby-plus --version 2.3.1
 
 If you're using bundler, like this:
 
     TAGLIB_DIR=/opt/homebrew/opt/taglib bundle install
 
 Another problem might be that `clang++` doesn't work with a specific version
-of TagLib. In that case, try compiling taglib-ruby's C++ extensions with a
+of TagLib. In that case, try compiling taglib-ruby-plus's C++ extensions with a
 different compiler:
 
-    TAGLIB_RUBY_CXX=g++-4.2 gem install taglib-ruby
+    TAGLIB_RUBY_CXX=g++-4.2 gem install taglib-ruby-plus
 
 ## Usage
 
 Complete API documentation can be found on
-[rubydoc.info](http://rubydoc.info/gems/taglib-ruby/frames).
+[rubydoc.info](https://rubydoc.info/gems/taglib-ruby-plus/frames).
+
+Load the gem with `require 'taglib_plus'`. The Ruby namespace remains `TagLib`
+because it represents the wrapped C++ library:
+
+    require 'taglib_plus'
 
 Begin with the `TagLib` namespace.
 
@@ -146,7 +154,7 @@ Run tests:
 
 Run irb with library:
 
-    irb -Ilib -rtaglib
+    irb -Ilib -rtaglib_plus
 
 Build and install gem into system gems:
 
@@ -192,7 +200,7 @@ To do everything in one command:
 
 Copyright (c) 2010-2022 Robin Stocker and others, see Git history.
 
-`taglib-ruby` is distributed under the MIT License, see
+`taglib-ruby-plus` is distributed under the MIT License, see
 [LICENSE.txt](LICENSE.txt) for details.
 
 In the binary gem for Windows, a compiled [TagLib][taglib] is bundled as
@@ -200,5 +208,6 @@ a DLL. TagLib is distributed under the GNU Lesser General Public License
 version 2.1 (LGPL) and Mozilla Public License (MPL).
 
 [taglib]: http://taglib.github.io/
-[gem-img]: https://badge.fury.io/rb/taglib-ruby.svg
-[gem-link]: https://rubygems.org/gems/taglib-ruby
+[original]: https://github.com/robinst/taglib-ruby
+[gem-img]: https://badge.fury.io/rb/taglib-ruby-plus.svg
+[gem-link]: https://rubygems.org/gems/taglib-ruby-plus

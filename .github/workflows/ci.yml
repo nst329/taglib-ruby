@@ -79,10 +79,10 @@ jobs:
           echo 'Checking for changes (there should be none)'
           git diff --exit-code
 
-      - name: Compile (taglib-ruby)
+      - name: Compile (taglib-ruby-plus)
         run: TAGLIB_DIR=$PWD/tmp/$PLATFORM/taglib-$TAGLIB_VERSION bundle exec rake compile
 
-      - name: Run Tests (taglib-ruby)
+      - name: Run Tests (taglib-ruby-plus)
         run: bundle exec rake test
 
       - name: Run MP4 metadata API test
@@ -92,26 +92,26 @@ jobs:
         run: bundle exec rake gemspec_check
 
       - name: Build gem artifact
-        run: gem build taglib-ruby.gemspec
+        run: gem build taglib-ruby-plus.gemspec
 
       - name: Install and smoke test packaged gem
         env:
-          GEM_HOME: ${{ runner.temp }}/taglib-ruby-gem-home
+          GEM_HOME: ${{ runner.temp }}/taglib-ruby-plus-gem-home
           TAGLIB_DIR: ${{ github.workspace }}/tmp/${{ env.PLATFORM }}/taglib-${{ env.TAGLIB_VERSION }}
           LD_LIBRARY_PATH: ${{ github.workspace }}/tmp/${{ env.PLATFORM }}/taglib-${{ env.TAGLIB_VERSION }}/lib
         run: |
           mkdir -p "$GEM_HOME"
-          gem install --local taglib-ruby-2.3.1.gem --no-document
+          gem install --local taglib-ruby-plus-2.3.1.gem --no-document
           ruby <<'RUBY'
-          gem 'taglib-ruby', '= 2.3.1'
+          gem 'taglib-ruby-plus', '= 2.3.1'
           require 'fileutils'
           require 'tmpdir'
-          require 'taglib'
+          require 'taglib_plus'
 
           raise 'Chapter API is unavailable' unless TagLib::MP4::Chapter
 
           source = File.expand_path('test/data/mp4.m4a')
-          dir = Dir.mktmpdir('taglib-ruby-gem-smoke')
+          dir = Dir.mktmpdir('taglib-ruby-plus-gem-smoke')
           path = File.join(dir, 'sample.m4a')
           FileUtils.cp(source, path)
 
