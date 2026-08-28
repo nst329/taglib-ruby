@@ -88,6 +88,20 @@ contributors regenerating wrappers; it is not needed to install the gem.
 Chapter comparison allows a 1ms start-time difference. Chapter input duration
 is validated even when the file was opened with `read_properties: false`.
 
+MP4 iTunes properties and artwork can be accessed through the high-level API:
+
+    file = TagLib::MP4::File.new('sample.m4a', false)
+    file.tag.set_property('TVShowName', 'Example Show')
+    artworks = file.tag.artwork
+    file.tag.set_artwork(artworks)
+    file.save
+    file.close
+
+`Artwork` returns Ruby-owned image data and supports JPEG, PNG, and BMP. GIF is
+not supported by the safe artwork API. `contentRating` uses a
+`TagLib::MP4::ContentRating` value object because its MP4 representation is a
+reverse-DNS item.
+
 ## Release Notes
 
 See [CHANGELOG.md](CHANGELOG.md).

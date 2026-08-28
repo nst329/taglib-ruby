@@ -123,10 +123,12 @@ module TagLib::MP4
     private
 
     def validate_text(value, name)
+      value = value.to_s.encode(Encoding::UTF_8) if value.is_a?(Symbol)
       unless value.is_a?(String) && value.encoding == Encoding::UTF_8 && value.valid_encoding?
         raise ArgumentError, "content rating #{name} must be a UTF-8 String"
       end
       raise ArgumentError, "content rating #{name} must not contain NUL bytes" if value.include?("\0")
+      raise ArgumentError, "content rating #{name} must not contain pipe characters" if value.include?('|')
 
       value.dup.freeze
     end

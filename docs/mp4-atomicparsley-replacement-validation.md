@@ -6,7 +6,7 @@
 
 TagLib 2.3.1の既存の`MP4::ItemMap`、`Item`、`CoverArt`、チャプターAPIを使えば、今回の対象に含まれるMP4メタデータの多くはRuby側へ移行できる見込みである。
 
-ただし、現時点で公開されているのは低レベルAPIであり、提案にある`set_property`、`set_artwork`は未実装である。また、通常の`File#save`について、未知atomを含む`ilst`のバイト単位保持は保証しない。
+MP4 property/artworkの高レベルAPIを追加した。通常の`File#save`について、未知atomを含む`ilst`のバイト単位保持は保証しない。
 
 ## 環境と方法
 
@@ -90,9 +90,9 @@ FFmpeg 9.0.1で同じJPEG 2枚を使い、次の2種類のMP4を作成して比�
 
 ## 実装判断
 
-1. `set_property(name, value)`は、まず上表の固定マッピングを持つRuby APIとして実装するのが妥当である。
-2. `set_artwork`は`CoverArt`の配列を受け取り、`covr`を全置換するAPIにできる。MIME文字列ではなく、TagLibのJPEG／PNG等のformat enumとの変換規則を定義する必要がある。
-3. `contentRating`は通常文字列itemと異なるreverse-DNS形式なので、専用の変換または明示的なraw item APIが必要である。
+1. `set_property(name, value)`は、上表の固定マッピングを持つRuby APIとして実装した。
+2. `set_artwork`はRuby所有の`Artwork`配列を受け取り、`covr`を全置換するAPIとして実装した。対応形式はJPEG/PNG/BMPである。
+3. `contentRating`は通常文字列itemと異なるreverse-DNS形式なので、`ContentRating`値オブジェクトで変換するAPIとして実装した。
 4. `stik`、数値フラグ、`trkn`など今回の対象外の項目まで汎用化する場合は、Ruby値からMP4 item型への変換規則を別途設計する必要がある。
 5. MListNew側でAtomicParsleyを削除する前に、実際の入力ファイルで、TagLib保存後のPlex・プレイヤー表示、複数artwork、チャプター、字幕／attached pictureの動作確認を追加する。
 

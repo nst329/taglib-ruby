@@ -127,5 +127,20 @@ jobs:
           file = TagLib::MP4::File.new(path, false)
           raise 'chapter round-trip failed' unless file.chapters == chapters
           file.close
+
+          file = TagLib::MP4::File.new(path, false)
+          tag = file.tag
+          raise 'MP4 metadata API unavailable' unless tag.property('title') == 'Title'
+          artwork = tag.artwork
+          raise 'artwork API unavailable' unless artwork.length == 1
+          tag.set_property('description', 'Packaged gem API')
+          tag.set_artwork(artwork)
+          raise 'metadata API save failed' unless file.save
+          file.close
+
+          file = TagLib::MP4::File.new(path, false)
+          raise 'metadata API round-trip failed' unless file.tag.property('description') == 'Packaged gem API'
+          raise 'artwork API round-trip failed' unless file.tag.artwork.length == 1
+          file.close
           FileUtils.remove_entry(dir)
           RUBY
