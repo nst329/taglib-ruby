@@ -1,6 +1,6 @@
 # frozen-string-literal: true
 
-source 'http://rubygems.org'
+source 'https://rubygems.org'
 
 # Use dependencies from .gemspec
 gemspec

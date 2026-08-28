@@ -3,7 +3,8 @@
 desc 'Checks file list in .gemspec against files tracked in Git'
 task :gemspec_check do |_t|
   exclude = ['.gitignore', '.github/workflows/ci.yml']
-  git_files = `git ls-files`.split("\n") - exclude
+  # 日本語ファイル名を含む一覧を、gemspecの文字列と同じ形式で比較する。
+  git_files = `git -c core.quotePath=false ls-files`.split("\n") - exclude
   gemspec_files = $gemspec.files
 
   only_in_gemspec = gemspec_files - git_files

@@ -23,7 +23,7 @@ Gem::Specification.new do |s|
   s.require_paths = ['lib']
   s.requirements = ['TagLib C++ >= 2.3.1 (libtag1-dev in Debian/Ubuntu, taglib-devel in Fedora/RHEL)']
 
-  s.add_development_dependency 'bundler', '>= 1.2', '< 3'
+  s.add_development_dependency 'bundler', '>= 2.4', '< 5'
   s.add_development_dependency 'rake-compiler', '~> 0.9'
   s.add_development_dependency 'shoulda-context', '~> 2.0'
   s.add_development_dependency 'test-unit', '~> 3.5'
@@ -62,6 +62,8 @@ Gem::Specification.new do |s|
     'docs/mp4-atomicparsley-replacement-design.md',
     'docs/mp4-atomicparsley-replacement-validation.md',
     'docs/ADR/2026-08-28-taglib-ruby-plusへの名称変更.md',
+    'docs/ADR/2026-08-28-mp4-chapter-read-ownership.md',
+    'docs/ADR/2026-08-28-bundler4-ci-compatibility.md',
     'docs/taglib/aiff.rb',
     'docs/taglib/base.rb',
     'docs/taglib/flac.rb',
