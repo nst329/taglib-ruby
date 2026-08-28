@@ -15,6 +15,17 @@ class MP4ChaptersTest < Test::Unit::TestCase
     FileUtils.rm_f(path)
   end
 
+  def with_chapter_fixture(nero: nil, quicktime: nil)
+    with_copy do |path|
+      file = TagLib::MP4::File.new(path, false)
+      file.set_chapters(nero, style: :nero) if nero
+      file.set_chapters(quicktime, style: :quicktime) if quicktime
+      assert file.save_chapters
+      file.close
+      yield path
+    end
+  end
+
   def chapter_list
     [
       TagLib::MP4::Chapter.new(start_time: 0, title: 'Opening'),
@@ -55,6 +66,62 @@ class MP4ChaptersTest < Test::Unit::TestCase
       file.remove_chapters(style: :nero)
       assert_equal :none, file.chapter_style
       assert file.save_chapters
+      file.close
+    end
+  end
+
+  def test_quicktime_only_read
+    with_chapter_fixture(quicktime: chapter_list) do |path|
+      file = TagLib::MP4::File.new(path, false)
+      assert_equal :quicktime, file.chapter_style
+      assert_equal chapter_list, file.chapters(style: :quicktime)
+      assert_empty file.chapters(style: :nero)
+      file.close
+    end
+  end
+
+  def test_common_read_when_nero_and_quicktime_match
+    with_chapter_fixture(nero: chapter_list, quicktime: chapter_list) do |path|
+      file = TagLib::MP4::File.new(path, false)
+      assert_equal :both, file.chapter_style
+      assert_equal chapter_list, file.chapters
+      file.close
+    end
+  end
+
+  def test_conflict_when_chapter_counts_differ
+    with_chapter_fixture(nero: chapter_list, quicktime: [chapter_list.first]) do |path|
+      file = TagLib::MP4::File.new(path, false)
+      assert_raise(TagLib::MP4::ChapterConflictError) { file.chapters }
+      file.close
+    end
+  end
+
+  def test_conflict_when_chapter_start_times_differ
+    quicktime = [
+      TagLib::MP4::Chapter.new(start_time: 0, title: 'Opening'),
+      TagLib::MP4::Chapter.new(start_time: 600, title: 'Main')
+    ]
+    with_chapter_fixture(nero: chapter_list, quicktime: quicktime) do |path|
+      file = TagLib::MP4::File.new(path, false)
+      assert_raise(TagLib::MP4::ChapterConflictError) { file.chapters }
+      file.close
+    end
+  end
+
+  def test_conflicting_chapters_can_be_read_by_style_without_crashing
+    with_chapter_fixture(nero: chapter_list, quicktime: [chapter_list.first]) do |path|
+      file = TagLib::MP4::File.new(path, false)
+      assert_equal chapter_list, file.chapters(style: :nero)
+      assert_equal [chapter_list.first], file.chapters(style: :quicktime)
+      file.close
+    end
+  end
+
+  def test_conflicting_chapters_report_both_styles
+    with_chapter_fixture(nero: chapter_list, quicktime: [chapter_list.first]) do |path|
+      file = TagLib::MP4::File.new(path, false)
+      assert_equal :both, file.chapter_style
       file.close
     end
   end

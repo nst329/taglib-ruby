@@ -2147,6 +2147,7 @@ static VALUE taglib_mp4_chapter_to_ruby(const TagLib::MP4::Chapter &chapter) {
   return rb_funcall(taglib_mp4_chapter_class(), rb_intern("new"), 2, start_time, title);
 }
 
+// Convert TagLib's value-owned chapter list without exposing native chapter objects to Ruby.
 static VALUE taglib_mp4_chapters_to_ruby(const TagLib::MP4::ChapterList &chapters) {
   VALUE result = rb_ary_new2(chapters.size());
   for (TagLib::MP4::ChapterList::ConstIterator it = chapters.begin(); it != chapters.end(); ++it) {
@@ -2218,6 +2219,7 @@ static bool taglib_mp4_chapter_lists_equal(const TagLib::MP4::ChapterList &left,
   return true;
 }
 
+// Read Nero chapters through a short-lived holder and return an independent list copy.
 static TagLib::MP4::ChapterList taglib_mp4_read_nero(TagLib::MP4::File *file, bool *present = NULL) {
   TagLib::MP4::NeroChapterList holder;
   bool exists = holder.read(file);
@@ -2227,6 +2229,7 @@ static TagLib::MP4::ChapterList taglib_mp4_read_nero(TagLib::MP4::File *file, bo
   return holder.chapters();
 }
 
+// Read QuickTime chapters through a short-lived holder and return an independent list copy.
 static TagLib::MP4::ChapterList taglib_mp4_read_quicktime(TagLib::MP4::File *file, bool *present = NULL) {
   TagLib::MP4::QtChapterList holder;
   bool exists = holder.read(file);
@@ -2236,6 +2239,7 @@ static TagLib::MP4::ChapterList taglib_mp4_read_quicktime(TagLib::MP4::File *fil
   return holder.chapters();
 }
 
+// Report which on-disk chapter representations exist, without choosing a representation.
 static VALUE taglib_mp4_chapter_style(TagLib::MP4::File *file) {
   bool nero_present = false;
   bool quicktime_present = false;
@@ -2253,23 +2257,34 @@ static VALUE taglib_mp4_chapter_style(TagLib::MP4::File *file) {
   return ID2SYM(rb_intern("none"));
 }
 
+// Read the requested representation and enforce conflict detection only for the common API.
 static VALUE taglib_mp4_chapters(TagLib::MP4::File *file, int style) {
   if (style == TAGLIB_RUBY_MP4_STYLE_NERO) {
-    return taglib_mp4_chapters_to_ruby(file->neroChapters());
+    return taglib_mp4_chapters_to_ruby(taglib_mp4_read_nero(file));
   }
   if (style == TAGLIB_RUBY_MP4_STYLE_QUICKTIME) {
-    return taglib_mp4_chapters_to_ruby(file->qtChapters());
+    return taglib_mp4_chapters_to_ruby(taglib_mp4_read_quicktime(file));
   }
 
-  bool nero_present = false;
-  bool quicktime_present = false;
-  TagLib::MP4::ChapterList nero = taglib_mp4_read_nero(file, &nero_present);
-  TagLib::MP4::ChapterList quicktime = taglib_mp4_read_quicktime(file, &quicktime_present);
-  if (nero_present && quicktime_present && !taglib_mp4_chapter_lists_equal(nero, quicktime)) {
+  bool conflict = false;
+  {
+    bool nero_present = false;
+    bool quicktime_present = false;
+    TagLib::MP4::ChapterList nero = taglib_mp4_read_nero(file, &nero_present);
+    TagLib::MP4::ChapterList quicktime = taglib_mp4_read_quicktime(file, &quicktime_present);
+    conflict = nero_present && quicktime_present && !taglib_mp4_chapter_lists_equal(nero, quicktime);
+  }
+  if (conflict) {
     VALUE error = rb_path2class("TagLib::MP4::ChapterConflictError");
     rb_raise(error, "Nero and QuickTime chapters differ");
   }
-  return taglib_mp4_chapters_to_ruby(nero_present ? nero : quicktime);
+
+  bool nero_present = false;
+  TagLib::MP4::ChapterList chapters = taglib_mp4_read_nero(file, &nero_present);
+  if (!nero_present) {
+    chapters = taglib_mp4_read_quicktime(file);
+  }
+  return taglib_mp4_chapters_to_ruby(chapters);
 }
 
 static void taglib_mp4_set_chapters(TagLib::MP4::File *file, VALUE value, int style) {
