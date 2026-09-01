@@ -88,6 +88,10 @@
   }
 %}
 
+%exception TagLib::MPEG::File::close {
+  DATA_PTR(self) = 0;
+  $action
+}
 %extend TagLib::MPEG::File {
   void close() {
     free_taglib_mpeg_file($self);

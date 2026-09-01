@@ -1,6 +1,8 @@
 # frozen-string-literal: true
 
 require File.join(File.dirname(__FILE__), 'helper')
+require 'open3'
+require 'rbconfig'
 require 'set'
 
 class MP4ItemsTest < Test::Unit::TestCase
@@ -133,6 +135,48 @@ class MP4ItemsTest < Test::Unit::TestCase
         rescue StandardError => e
           assert_equal 'ObjectPreviouslyDeleted', e.class.to_s
         end
+      end
+
+      should 'survive GC compaction while inserting a temporary item' do
+        script = <<~'RUBY'
+          require 'taglib_plus'
+
+          100.times do
+            file = TagLib::MP4::File.new(ARGV.fetch(0))
+            tag = file.tag
+            tag.item_map
+            GC.start
+            GC.compact
+            tag.item_map.insert('©cpy', TagLib::MP4::Item.from_string_list(['genre']))
+            raise 'unexpected item value' unless tag.item_map['©cpy'].to_string_list == ['genre']
+            file.close
+          end
+        RUBY
+        fixture = File.expand_path('data/mp4.m4a', __dir__)
+        lib = File.expand_path('../lib', __dir__)
+        stdout, stderr, status = Open3.capture3(
+          RbConfig.ruby, '--yjit', "-I#{lib}", '-e', script, fixture
+        )
+
+        assert_predicate status, :success?, "child process failed: #{stdout}\n#{stderr}"
+      end
+
+      should 'release borrowed wrappers when the file closes' do
+        baseline = eval('$SWIG_TRACKINGS_COUNT')
+        file = TagLib::MP4::File.new('test/data/mp4.m4a')
+        file.tag.item_map
+        assert_operator eval('$SWIG_TRACKINGS_COUNT'), :>, baseline
+
+        file.close
+        assert_equal baseline, eval('$SWIG_TRACKINGS_COUNT')
+      end
+
+      should 'not track owned Item factory results' do
+        baseline = eval('$SWIG_TRACKINGS_COUNT')
+        item = TagLib::MP4::Item.from_string_list(['owned'])
+
+        assert_equal baseline, eval('$SWIG_TRACKINGS_COUNT')
+        assert_equal ['owned'], item.to_string_list
       end
     end
 

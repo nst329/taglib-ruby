@@ -48,6 +48,10 @@
   }
 %}
 
+%exception TagLib::Vorbis::File::close {
+  DATA_PTR(self) = 0;
+  $action
+}
 %extend TagLib::Vorbis::File {
   void close() {
     free_taglib_vorbis_file($self);

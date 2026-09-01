@@ -1,6 +1,7 @@
 # frozen-string-literal: true
 
 require_relative 'build'
+require_relative 'swig_ruby_runtime_patch'
 
 # Tasks for generating SWIG wrappers in ext
 
@@ -33,6 +34,7 @@ def run_swig(mod)
     wrap = "#{mod}_wrap.cxx"
     wrapdata = File.read(wrap)
     File.write(wrap, wrapdata.gsub(swiglib, '/swig'))
+    patch_swig_ruby_runtime(wrap)
   end
 end
 

@@ -209,6 +209,10 @@ namespace TagLib {
   }
 %}
 
+%exception TagLib::FileRef::close {
+  DATA_PTR(self) = 0;
+  $action
+}
 %extend TagLib::FileRef {
   void close() {
     free_taglib_fileref($self);

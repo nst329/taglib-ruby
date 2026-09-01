@@ -79,6 +79,10 @@ namespace TagLib {
   }
 %}
 
+%exception TagLib::RIFF::AIFF::File::close {
+  DATA_PTR(self) = 0;
+  $action
+}
 %extend TagLib::RIFF::AIFF::File {
   void close() {
     free_taglib_riff_aiff_file($self);

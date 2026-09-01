@@ -21,6 +21,7 @@ Gem::Specification.new do |s|
   DESC
 
   s.require_paths = ['lib']
+  s.required_ruby_version = '>= 3.2'
   s.requirements = ['TagLib C++ >= 2.3.1 (libtag1-dev in Debian/Ubuntu, taglib-devel in Fedora/RHEL)']
 
   s.add_development_dependency 'bundler', '>= 2.4', '< 5'
@@ -64,6 +65,7 @@ Gem::Specification.new do |s|
     'docs/ADR/2026-08-28-taglib-ruby-plusへの名称変更.md',
     'docs/ADR/2026-08-28-mp4-chapter-read-ownership.md',
     'docs/ADR/2026-08-28-bundler4-ci-compatibility.md',
+    'docs/ADR/2026-09-01-swig-tracking-moving-gc.md',
     'docs/taglib/aiff.rb',
     'docs/taglib/base.rb',
     'docs/taglib/flac.rb',
@@ -131,6 +133,7 @@ Gem::Specification.new do |s|
     'tasks/build.rb',
     'tasks/ext.rake',
     'tasks/gemspec_check.rake',
+    'tasks/swig_ruby_runtime_patch.rb',
     'tasks/swig.rake',
     'test/aiff_examples_test.rb',
     'test/aiff_file_test.rb',

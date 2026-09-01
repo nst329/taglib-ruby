@@ -1229,105 +1229,132 @@ extern "C" {
 #  error sizeof(void*) is not the same as long or long long
 #endif
 
-/* Global hash table to store Trackings from C/C++
-   structs to Ruby Objects.
-*/
+/* Keep a movable weak reference instead of rooting the wrapper itself. */
+typedef struct {
+  VALUE weakref;
+} swig_ruby_tracking_entry;
+
 static st_table* swig_ruby_trackings = NULL;
+static VALUE swig_ruby_weakref_class = Qnil;
 
 static VALUE swig_ruby_trackings_count(ID id, VALUE *var) {
   return SWIG2NUM(swig_ruby_trackings->num_entries);
 }
 
+SWIGRUNTIME void SWIG_RubyRemoveTracking(void* ptr);
+SWIGRUNTIME VALUE SWIG_RubyInstanceFor(void* ptr);
 
-/* Setup a hash table to store Trackings */
+/* Setup a hash table shared by all SWIG bundles in this process. */
 SWIGRUNTIME void SWIG_RubyInitializeTrackings(void) {
-  /* Create a hash table to store Trackings from C++
-     objects to Ruby objects. */
-
-  /* Try to see if some other .so has already created a
-     tracking hash table, which we keep hidden in an instance var
-     in the SWIG module.
-     This is done to allow multiple DSOs to share the same
-     tracking table.
-  */
   VALUE trackings_value = Qnil;
-  /* change the variable name so that we can mix modules
-     compiled with older SWIG's - this used to be called "@__trackings__" */
-  ID trackings_id = rb_intern( "@__safetrackings__" );
+  ID trackings_id = rb_intern("@__safetrackings__");
   VALUE verbose = rb_gv_get("VERBOSE");
   rb_gv_set("VERBOSE", Qfalse);
-  trackings_value = rb_ivar_get( _mSWIG, trackings_id );
+  trackings_value = rb_ivar_get(_mSWIG, trackings_id);
   rb_gv_set("VERBOSE", verbose);
 
-  /* The trick here is that we have to store the hash table
-  pointer in a Ruby variable. We do not want Ruby's GC to
-  treat this pointer as a Ruby object, so we convert it to
-  a Ruby numeric value. */
   if (trackings_value == Qnil) {
-    /* No, it hasn't.  Create one ourselves */
     swig_ruby_trackings = st_init_numtable();
-    rb_ivar_set( _mSWIG, trackings_id, SWIG2NUM(swig_ruby_trackings) );
+    rb_ivar_set(_mSWIG, trackings_id, SWIG2NUM(swig_ruby_trackings));
   } else {
-    swig_ruby_trackings = (st_table*)NUM2SWIG(trackings_value);
+    swig_ruby_trackings = (st_table *)NUM2SWIG(trackings_value);
   }
 
   rb_define_virtual_variable("SWIG_TRACKINGS_COUNT",
                              VALUEFUNC(swig_ruby_trackings_count),
-                             SWIG_RUBY_VOID_ANYARGS_FUNC((rb_gvar_setter_t*)NULL));
+                             SWIG_RUBY_VOID_ANYARGS_FUNC((rb_gvar_setter_t *)NULL));
+  rb_require("weakref");
+  swig_ruby_weakref_class = rb_const_get(rb_cObject, rb_intern("WeakRef"));
 }
 
-/* Add a Tracking from a C/C++ struct to a Ruby object */
+/* Track only borrowed wrappers. Ruby-owned wrappers keep their native
+   destructor and must remain collectable. */
 SWIGRUNTIME void SWIG_RubyAddTracking(void* ptr, VALUE object) {
-  /* Store the mapping to the global hash table. */
-  st_insert(swig_ruby_trackings, (st_data_t)ptr, object);
+  st_data_t old_value;
+  swig_ruby_tracking_entry *entry;
+  VALUE weakref;
+  VALUE arguments[1];
+
+  if (!ptr || TYPE(object) != T_DATA || RTYPEDDATA_P(object) ||
+      RDATA(object)->dfree != SWIG_RubyRemoveTracking) {
+    return;
+  }
+
+  if (st_lookup(swig_ruby_trackings, (st_data_t)ptr, &old_value)) {
+    if (SWIG_RubyInstanceFor(ptr) == object) {
+      return;
+    }
+    /* SWIG may expose one native pointer through compatible wrapper types. */
+    SWIG_RubyRemoveTracking(ptr);
+  }
+
+  arguments[0] = object;
+  weakref = rb_class_new_instance(1, arguments, swig_ruby_weakref_class);
+  entry = (swig_ruby_tracking_entry *)malloc(sizeof(*entry));
+  if (!entry) {
+    rb_raise(rb_eNoMemError, "failed to allocate SWIG tracking entry");
+  }
+  entry->weakref = Qnil;
+  rb_gc_register_address(&entry->weakref);
+  entry->weakref = weakref;
+  st_insert(swig_ruby_trackings, (st_data_t)ptr, (st_data_t)entry);
 }
 
-/* Get the Ruby object that owns the specified C/C++ struct */
+/* Get the current Ruby wrapper for a native pointer. */
+static VALUE swig_ruby_weakref_get(VALUE weakref) {
+  return rb_funcall(weakref, rb_intern("__getobj__"), 0);
+}
+
 SWIGRUNTIME VALUE SWIG_RubyInstanceFor(void* ptr) {
-  /* Now lookup the value stored in the global hash table */
-  VALUE value;
+  st_data_t value;
+  swig_ruby_tracking_entry *entry;
+  int state = 0;
+  VALUE object;
 
   if (st_lookup(swig_ruby_trackings, (st_data_t)ptr, &value)) {
-    return value;
-  } else {
-    return Qnil;
+    entry = (swig_ruby_tracking_entry *)value;
+    object = rb_protect(swig_ruby_weakref_get, entry->weakref, &state);
+    if (!state) {
+      return object;
+    }
+    rb_set_errinfo(Qnil);
+    SWIG_RubyRemoveTracking(ptr);
   }
+  return Qnil;
 }
 
-/* Remove a Tracking from a C/C++ struct to a Ruby object.  It
-   is very important to remove objects once they are destroyed
-   since the same memory address may be reused later to create
-   a new object. */
+/* Remove a tracking entry before the native pointer can be reused. */
 SWIGRUNTIME void SWIG_RubyRemoveTracking(void* ptr) {
-  /* Delete the object from the hash table */
-  st_delete(swig_ruby_trackings, (st_data_t *)&ptr, NULL);
+  st_data_t key = (st_data_t)ptr;
+  st_data_t value;
+  swig_ruby_tracking_entry *entry;
+
+  if (!ptr || !st_delete(swig_ruby_trackings, &key, &value)) {
+    return;
+  }
+  entry = (swig_ruby_tracking_entry *)value;
+  rb_gc_unregister_address(&entry->weakref);
+  free(entry);
 }
 
-/* This is a helper method that unlinks a Ruby object from its
-   underlying C++ object.  This is needed if the lifetime of the
-   Ruby object is longer than the C++ object. */
+/* Invalidate a wrapper whose native object was destroyed elsewhere. */
 SWIGRUNTIME void SWIG_RubyUnlinkObjects(void* ptr) {
   VALUE object = SWIG_RubyInstanceFor(ptr);
 
   if (object != Qnil) {
-    // object might have the T_ZOMBIE type, but that's just
-    // because the GC has flagged it as such for a deferred
-    // destruction. Until then, it's still a T_DATA object.
     DATA_PTR(object) = 0;
   }
+  SWIG_RubyRemoveTracking(ptr);
 }
 
-/* This is a helper method that iterates over all the trackings
-   passing the C++ object pointer and its related Ruby object
-   to the passed callback function. */
-
-/* Proxy method to abstract the internal trackings datatype */
 static int swig_ruby_internal_iterate_callback(st_data_t ptr, st_data_t obj, st_data_t meth) {
-  ((void (*) (void *, VALUE))meth)((void *)ptr, (VALUE)obj);
+  swig_ruby_tracking_entry *entry = (swig_ruby_tracking_entry *)obj;
+  VALUE object = swig_ruby_weakref_get(entry->weakref);
+  ((void (*) (void *, VALUE))meth)((void *)ptr, object);
   return ST_CONTINUE;
 }
 
-SWIGRUNTIME void SWIG_RubyIterateTrackings( void(*meth)(void* ptr, VALUE obj) ) {
+SWIGRUNTIME void SWIG_RubyIterateTrackings(void(*meth)(void* ptr, VALUE obj)) {
   st_foreach(swig_ruby_trackings,
              SWIG_RUBY_INT_ANYARGS_FUNC(swig_ruby_internal_iterate_callback),
              (st_data_t)meth);
@@ -1556,7 +1583,7 @@ SWIG_Ruby_NewPointerObj(void *ptr, swig_type_info *type, int flags)
     sklass = (swig_class *) type->clientdata;
 		
     /* Are we tracking this class and have we already returned this Ruby object? */
-    track = sklass->trackObjects;
+    track = sklass->trackObjects && !own;
     if (track) {
       obj = SWIG_RubyInstanceFor(ptr);
 
@@ -2988,6 +3015,7 @@ _wrap_File_close(int argc, VALUE *argv, VALUE self) {
     SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "TagLib::RIFF::AIFF::File *","close", 1, self )); 
   }
   arg1 = reinterpret_cast< TagLib::RIFF::AIFF::File * >(argp1);
+  DATA_PTR(self) = 0;
   TagLib_RIFF_AIFF_File_close(arg1);
   return Qnil;
 fail:

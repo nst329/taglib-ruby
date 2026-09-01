@@ -513,39 +513,51 @@ namespace TagLib {
 }
 
 %extend TagLib::MP4::Item {
+  %newobject from_bool;
   static TagLib::MP4::Item * from_bool(bool q) {
     return new TagLib::MP4::Item(q);
   }
 
+  %newobject from_byte;
   static TagLib::MP4::Item * from_byte(unsigned char n) {
     return new TagLib::MP4::Item(n);
   }
 
+  %newobject from_uint;
   static TagLib::MP4::Item * from_uint(unsigned int n) {
     return new TagLib::MP4::Item(n);
   }
 
+  %newobject from_int;
   static TagLib::MP4::Item * from_int(int n) {
     return new TagLib::MP4::Item(n);
   }
 
+  %newobject from_long_long;
   static TagLib::MP4::Item * from_long_long(long long n) {
     return new TagLib::MP4::Item(n);
   }
 
+  %newobject from_string_list;
   static TagLib::MP4::Item * from_string_list(const TagLib::StringList &string_list) {
    return new TagLib::MP4::Item(string_list);
   }
 
+  %newobject from_cover_art_list;
   static TagLib::MP4::Item * from_cover_art_list(const TagLib::MP4::CoverArtList &cover_art_list) {
     return new TagLib::MP4::Item(cover_art_list);
   }
 
+  %newobject from_byte_vector_list;
   static TagLib::MP4::Item * from_byte_vector_list(const TagLib::ByteVectorList &byte_vector_list) {
     return new TagLib::MP4::Item(byte_vector_list);
   }
 }
 
+%exception TagLib::MP4::File::close {
+  DATA_PTR(self) = 0;
+  $action
+}
 %extend TagLib::MP4::File {
   void close() {
     free_taglib_mp4_file($self);

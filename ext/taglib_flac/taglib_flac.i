@@ -113,6 +113,10 @@
   }
 %}
 
+%exception TagLib::FLAC::File::close {
+  DATA_PTR(self) = 0;
+  $action
+}
 %extend TagLib::FLAC::File {
   void close() {
     free_taglib_flac_file($self);

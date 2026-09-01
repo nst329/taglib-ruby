@@ -91,6 +91,10 @@ namespace TagLib {
   }
 %}
 
+%exception TagLib::RIFF::WAV::File::close {
+  DATA_PTR(self) = 0;
+  $action
+}
 %extend TagLib::RIFF::WAV::File {
   void close() {
     free_taglib_riff_wav_file($self);
