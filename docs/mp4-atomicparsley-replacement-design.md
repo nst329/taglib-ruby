@@ -70,6 +70,8 @@ tag.set_property("contentRating", rating)
 
 既知のレーティングの短縮入力を追加する場合も、固定テーブルにない値は推測せずエラーにする。未知のwire値は`property_values`または`item_map`で読み書きできるようにする。
 
+文字列プロパティは、入力の文字コードに従って`encode(Encoding::UTF_8)`で変換する。呼び出し元の文字列は変更しない。変換できない場合はRubyの`Encoding`例外をそのまま返し、文字の置換や文字コードの推測は行わない。String以外、不正なUTF-8、NUL文字は`ArgumentError`とする。変換も全値の検証に含め、失敗時はitemを変更しない。`ContentRating`とチャプターの入力仕様は変更しない。
+
 ### Artwork
 
 SWIGが所有する`CoverArt`ポインタをRuby利用者へ返さず、Ruby所有の不変値オブジェクトを追加する。

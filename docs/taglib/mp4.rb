@@ -255,6 +255,9 @@ module TagLib::MP4
     end
 
     # Set one managed MP4/iTunes property in memory.
+    # Strings are transcoded to UTF-8 without modifying the input.
+    # @raise [EncodingError] if transcoding fails
+    # @raise [ArgumentError] if the value is invalid or contains NUL bytes
     # @param name [String, Symbol]
     # @param value [String, ContentRating]
     # @return [TagLib::MP4::Tag] self
@@ -262,6 +265,9 @@ module TagLib::MP4
     end
 
     # Set multiple managed MP4/iTunes properties after validating all values.
+    # Strings are transcoded to UTF-8 before any items are changed.
+    # @raise [EncodingError] if transcoding fails
+    # @raise [ArgumentError] if a name or value is invalid
     # @param values [Hash<String, String, ContentRating>]
     # @return [TagLib::MP4::Tag] self
     def set_properties(values)

@@ -90,6 +90,53 @@ class MP4MetadataAPITest < Test::Unit::TestCase
     end
   end
 
+  def test_string_properties_transcode_to_utf8_and_round_trip
+    inputs = {
+      'title' => 'ASCII title'.encode(Encoding::US_ASCII).freeze,
+      'grouping' => 'シリーズ'.encode(Encoding::Shift_JIS).freeze,
+      'description' => '説明'.encode(Encoding::UTF_16LE).freeze,
+      'comment' => 'Binary ASCII'.b.freeze
+    }
+    originals = inputs.transform_values { |value| [value.bytes, value.encoding] }
+    with_copy do |path|
+      open_file(path) do |file|
+        file.tag.set_properties(inputs)
+        file.tag.set_property('artist', '歌手'.encode(Encoding::EUC_JP))
+        assert_equal originals, inputs.transform_values { |value| [value.bytes, value.encoding] }
+        assert file.save
+      end
+      open_file(path) do |file|
+        inputs.each do |name, value|
+          actual = file.tag.property(name)
+          assert_equal value.encode(Encoding::UTF_8), actual
+          assert_equal Encoding::UTF_8, actual.encoding
+        end
+        assert_equal '歌手', file.tag.property('artist')
+      end
+    end
+  end
+
+  def test_invalid_string_properties_do_not_mutate_items
+    cases = [
+      ["\xFF".b, Encoding::UndefinedConversionError],
+      ["\x82".dup.force_encoding(Encoding::Shift_JIS), Encoding::InvalidByteSequenceError],
+      ["\xFF".dup.force_encoding(Encoding::UTF_8), ArgumentError],
+      ["a\0b".encode(Encoding::UTF_16LE), ArgumentError],
+      [%w[series], ArgumentError]
+    ]
+    with_copy do |path|
+      open_file(path) do |file|
+        original = file.tag.properties
+        cases.each do |value, error|
+          assert_raise(error) do
+            file.tag.set_properties('title' => 'Changed', 'grouping' => value)
+          end
+          assert_equal original, file.tag.properties
+        end
+      end
+    end
+  end
+
   def test_artwork_is_ruby_owned_and_round_trips_in_order
     first_data = File.binread(JPEG_FILE)
     second_data = File.binread(LARGE_JPEG_FILE)

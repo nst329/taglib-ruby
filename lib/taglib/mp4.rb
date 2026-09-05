@@ -432,7 +432,10 @@ module TagLib::MP4
         return value.to_s
       end
 
-      unless value.is_a?(String) && value.encoding == Encoding::UTF_8 && value.valid_encoding?
+      raise ArgumentError, "#{name} must be a String" unless value.is_a?(String)
+
+      value = value.encode(Encoding::UTF_8)
+      unless value.valid_encoding?
         raise ArgumentError, "#{name} must be a UTF-8 String"
       end
       raise ArgumentError, "#{name} must not contain NUL bytes" if value.include?("\0")
